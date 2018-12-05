@@ -344,7 +344,42 @@ func main() {
 	}
 
 	log.Donef("Authenticated client created")
-	// ---
+
+
+	//
+	// Upload APKs
+	fmt.Println()
+	log.Infof("Upload apks or app bundle")
+
+	versionCodes := []int64{}
+	apkPaths := strings.Split(configs.ApkPath, "|")
+
+	// "main:/file/path/1.obb|patch:/file/path/2.obb"
+	expansionfileUpload := strings.TrimSpace(configs.ExpansionfilePath) != ""
+	expansionfilePaths := strings.Split(configs.ExpansionfilePath, "|")
+
+	// Toke
+	packageNames := strings.Split(configs.PackageName, "|")
+
+	if (len(apkPaths) != len(packageNames)) {
+		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(packageNames))
+	}
+
+	// ------ //
+
+	if expansionfileUpload && (len(apkPaths) != len(expansionfilePaths)) {
+		failf("Mismatching number of APKs(%d) and Expansionfiles(%d)", len(apkPaths), len(expansionfilePaths))
+	}
+
+	for i, apkPath := range apkPaths {
+		versionCode := int64(0)
+		packageName := packageNames[i]
+		apkFile, err := os.Open(apkPath)
+		if err != nil {
+			failf("Failed to read apk (%s), error: %s", apkPath, err)
+		}
+
+			// ---
 
 	//
 	// Create insert edit
@@ -377,39 +412,6 @@ func main() {
 	for _, track := range listResponse.Tracks {
 		log.Printf(" %s versionCodes: %v", track.Track, track.VersionCodes)
 	}
-
-	//
-	// Upload APKs
-	fmt.Println()
-	log.Infof("Upload apks or app bundle")
-
-	versionCodes := []int64{}
-	apkPaths := strings.Split(configs.ApkPath, "|")
-
-	// "main:/file/path/1.obb|patch:/file/path/2.obb"
-	expansionfileUpload := strings.TrimSpace(configs.ExpansionfilePath) != ""
-	expansionfilePaths := strings.Split(configs.ExpansionfilePath, "|")
-
-	// Toke
-	packageNames := strings.Split(configs.PackageName, "|")
-
-	if (len(apkPaths) != len(packageNames)) {
-		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(expansionfilePaths))
-	}
-
-	// ------ //
-
-	if expansionfileUpload && (len(apkPaths) != len(expansionfilePaths)) {
-		failf("Mismatching number of APKs(%d) and Expansionfiles(%d)", len(apkPaths), len(expansionfilePaths))
-	}
-
-	for i, apkPath := range apkPaths {
-		versionCode := int64(0)
-		packageName := packageNames[i]
-		apkFile, err := os.Open(apkPath)
-		if err != nil {
-			failf("Failed to read apk (%s), error: %s", apkPath, err)
-		}
 
 		if strings.HasSuffix(apkPath, "aab") {
 			editsBundlesService := androidpublisher.NewEditsBundlesService(service)
