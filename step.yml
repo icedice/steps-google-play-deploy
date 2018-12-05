@@ -66,6 +66,11 @@ inputs:
       title: Package name
       description: |-
         Package name of the APK or App bundle to deploy.
+        
+        Provide exactly the same number of package names as in apk_path, separated by `|` character and in the correct order
+      
+        Format examples:
+        - `dk.jp.myapp1|dk.jp.myapp2`
       is_required: true
   - apk_path: "$BITRISE_APK_PATH"
     opts:
