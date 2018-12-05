@@ -388,7 +388,7 @@ func main() {
 
 	editsService := androidpublisher.NewEditsService(service)
 
-	editsInsertCall := editsService.Insert(configs.PackageName, nil)
+	editsInsertCall := editsService.Insert(packageName, nil)
 
 	appEdit, err := editsInsertCall.Do()
 	if err != nil {
@@ -404,7 +404,7 @@ func main() {
 	log.Infof("List track infos")
 
 	tracksService := androidpublisher.NewEditsTracksService(service)
-	tracksListCall := tracksService.List(configs.PackageName, appEdit.Id)
+	tracksListCall := tracksService.List(packageName, appEdit.Id)
 	listResponse, err := tracksListCall.Do()
 	if err != nil {
 		failf("Failed to list tracks, error: %s", err)
@@ -477,7 +477,7 @@ func main() {
 				failf("Failed to read mapping file (%s), error: %s", configs.MappingFile, err)
 			}
 			editsDeobfuscationfilesService := androidpublisher.NewEditsDeobfuscationfilesService(service)
-			editsDeobfuscationfilesUloadCall := editsDeobfuscationfilesService.Upload(configs.PackageName, appEdit.Id, versionCode, "proguard")
+			editsDeobfuscationfilesUloadCall := editsDeobfuscationfilesService.Upload(packageName, appEdit.Id, versionCode, "proguard")
 			editsDeobfuscationfilesUloadCall.Media(mappingFile, googleapi.ContentType("application/octet-stream"))
 
 			if _, err = editsDeobfuscationfilesUloadCall.Do(); err != nil {
@@ -489,7 +489,6 @@ func main() {
 				fmt.Println()
 			}
 		}
-	}
 
 	// Update track
 	fmt.Println()
@@ -510,7 +509,7 @@ func main() {
 		newTrack.UserFraction = userFraction
 	}
 
-	editsTracksUpdateCall := editsTracksService.Update(configs.PackageName, appEdit.Id, configs.Track, &newTrack)
+	editsTracksUpdateCall := editsTracksService.Update(packageName, appEdit.Id, configs.Track, &newTrack)
 	track, err := editsTracksUpdateCall.Do()
 	if err != nil {
 		failf("Failed to update track, error: %s", err)
@@ -540,7 +539,7 @@ func main() {
 		tracksService := androidpublisher.NewEditsTracksService(service)
 
 		// Collect tracks to update
-		tracksListCall := tracksService.List(configs.PackageName, appEdit.Id)
+		tracksListCall := tracksService.List(packageName, appEdit.Id)
 		listResponse, err := tracksListCall.Do()
 		if err != nil {
 			failf("Failed to list tracks, error: %s", err)
@@ -568,7 +567,7 @@ func main() {
 		log.Printf(" possible tracks to update: %v", trackNamesToUpdate)
 
 		for _, trackName := range trackNamesToUpdate {
-			tracksGetCall := tracksService.Get(configs.PackageName, appEdit.Id, trackName)
+			tracksGetCall := tracksService.Get(packageName, appEdit.Id, trackName)
 			track, err := tracksGetCall.Do()
 			if err != nil {
 				failf("Failed to get track (%s), error: %s", trackName, err)
@@ -603,7 +602,7 @@ func main() {
 				track.NullFields = []string{"VersionCodes"}
 				track.ForceSendFields = []string{"VersionCodes"}
 
-				tracksUpdateCall := tracksService.Patch(configs.PackageName, appEdit.Id, trackName, track)
+				tracksUpdateCall := tracksService.Patch(packageName, appEdit.Id, trackName, track)
 				if _, err := tracksUpdateCall.Do(); err != nil && err != io.EOF {
 					failf("Failed to update track (%s), error: %s", trackName, err)
 				}
@@ -640,7 +639,7 @@ func main() {
 					RecentChanges: recentChanges,
 				}
 
-				editsApkListingsCall := editsApklistingsService.Update(configs.PackageName, appEdit.Id, versionCode, language, &newApkListing)
+				editsApkListingsCall := editsApklistingsService.Update(packageName, appEdit.Id, versionCode, language, &newApkListing)
 				apkListing, err := editsApkListingsCall.Do()
 				if err != nil {
 					failf("Failed to update listing, error: %s", err)
@@ -657,7 +656,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Validating edit")
 
-	editsValidateCall := editsService.Validate(configs.PackageName, appEdit.Id)
+	editsValidateCall := editsService.Validate(packageName, appEdit.Id)
 	if _, err := editsValidateCall.Do(); err != nil {
 		failf("Failed to validate edit, error: %s", err)
 	}
@@ -670,11 +669,12 @@ func main() {
 	fmt.Println()
 	log.Infof("Committing edit")
 
-	editsCommitCall := editsService.Commit(configs.PackageName, appEdit.Id)
+	editsCommitCall := editsService.Commit(packageName, appEdit.Id)
 	if _, err := editsCommitCall.Do(); err != nil {
 		failf("Failed to commit edit, error: %s", err)
 	}
 
 	log.Donef("Edit committed")
 	// ---
+}
 }
