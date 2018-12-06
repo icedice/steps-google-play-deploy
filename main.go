@@ -60,7 +60,7 @@ func packageNameForApk(apkPath string) string {
 	_, err := exec.LookPath(apptPath)
 
 	if err != nil {
-		log.Fatal("Unable to find aapt")
+		log.Errorf("Unable to find aapt")
 	}
 
 	cmd := exec.Command(apptPath, "dump", "badging", apkPath)
