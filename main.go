@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -48,6 +50,27 @@ type ConfigsModel struct {
 	WhatsnewsDir            string
 	MappingFile             string
 	UntrackBlockingVersions string
+}
+
+func packageNameForApk(apkPath string) {
+
+	fmt.Printf("Getting package name for %s\n", apkPath)
+
+	_, err := exec.LookPath("/Users/icedice/Library/Android/sdk/build-tools/28.0.3/aapt")
+
+	if err != nil {
+		log.Fatal("Unable to find aapt")
+	}
+
+	cmd := exec.Command("/Users/icedice/Library/Android/sdk/build-tools/28.0.3/aapt", "dump", "badging", apkPath)
+	stdoutStderr, err := cmd.CombinedOutput()
+
+	s := string(stdoutStderr)
+	packageNameRegex := regexp.MustCompile(`package: name='(.*?)'`)
+
+	packageName := packageNameRegex.FindAllStringSubmatch(s, -1)[0][1]
+
+	fmt.Println("package name:", packageName)
 }
 
 func createConfigsModelFromEnvs() ConfigsModel {
@@ -357,15 +380,6 @@ func main() {
 	expansionfileUpload := strings.TrimSpace(configs.ExpansionfilePath) != ""
 	expansionfilePaths := strings.Split(configs.ExpansionfilePath, "|")
 
-	// Toke
-	packageNames := strings.Split(configs.PackageName, "|")
-
-	sort.Strings(packageNames)
-
-	if len(apkPaths) != len(packageNames) {
-		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(packageNames))
-	}
-
 	// ------ //
 
 	if expansionfileUpload && (len(apkPaths) != len(expansionfilePaths)) {
@@ -374,7 +388,7 @@ func main() {
 
 	for i, apkPath := range apkPaths {
 		versionCode := int64(0)
-		packageName := packageNames[i]
+		packageName := packageNameForApk(apkPath)
 		apkFile, err := os.Open(apkPath)
 		if err != nil {
 			failf("Failed to read apk (%s), error: %s", apkPath, err)
