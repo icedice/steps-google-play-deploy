@@ -55,13 +55,15 @@ func packageNameForApk(apkPath string) string {
 
 	fmt.Printf("Getting package name for %s\n", apkPath)
 
-	_, err := exec.LookPath("/Users/icedice/Library/Android/sdk/build-tools/28.0.3/aapt")
+	apptPath := "/opt/android-sdk-linux/build-tools/28.0.3/aapt"
+
+	_, err := exec.LookPath(apptPath)
 
 	if err != nil {
 		log.Fatal("Unable to find aapt")
 	}
 
-	cmd := exec.Command("/Users/icedice/Library/Android/sdk/build-tools/28.0.3/aapt", "dump", "badging", apkPath)
+	cmd := exec.Command(apptPath, "dump", "badging", apkPath)
 	stdoutStderr, err := cmd.CombinedOutput()
 
 	s := string(stdoutStderr)
