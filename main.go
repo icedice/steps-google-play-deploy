@@ -383,15 +383,6 @@ func main() {
 	expansionfileUpload := strings.TrimSpace(configs.ExpansionfilePath) != ""
 	expansionfilePaths := strings.Split(configs.ExpansionfilePath, "|")
 
-	// Toke
-	packageNames := strings.Split(configs.PackageName, "|")
-
-	sort.Strings(packageNames)
-
-	if len(apkPaths) != len(packageNames) {
-		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(packageNames))
-	}
-
 	// ------ //
 
 	if expansionfileUpload && (len(apkPaths) != len(expansionfilePaths)) {
