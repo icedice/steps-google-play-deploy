@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -52,7 +51,7 @@ type ConfigsModel struct {
 	UntrackBlockingVersions string
 }
 
-func packageNameForApk(apkPath string) {
+func packageNameForApk(apkPath string) string {
 
 	fmt.Printf("Getting package name for %s\n", apkPath)
 
@@ -71,6 +70,8 @@ func packageNameForApk(apkPath string) {
 	packageName := packageNameRegex.FindAllStringSubmatch(s, -1)[0][1]
 
 	fmt.Println("package name:", packageName)
+
+	return packageName
 }
 
 func createConfigsModelFromEnvs() ConfigsModel {
@@ -379,6 +380,15 @@ func main() {
 	// "main:/file/path/1.obb|patch:/file/path/2.obb"
 	expansionfileUpload := strings.TrimSpace(configs.ExpansionfilePath) != ""
 	expansionfilePaths := strings.Split(configs.ExpansionfilePath, "|")
+
+	// Toke
+	packageNames := strings.Split(configs.PackageName, "|")
+
+	sort.Strings(packageNames)
+
+	if len(apkPaths) != len(packageNames) {
+		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(packageNames))
+	}
 
 	// ------ //
 
