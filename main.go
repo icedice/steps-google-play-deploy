@@ -360,6 +360,8 @@ func main() {
 	// Toke
 	packageNames := strings.Split(configs.PackageName, "|")
 
+	sort.Strings(packageNames)
+
 	if len(apkPaths) != len(packageNames) {
 		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(packageNames))
 	}
