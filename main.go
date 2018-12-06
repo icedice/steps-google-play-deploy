@@ -345,7 +345,6 @@ func main() {
 
 	log.Donef("Authenticated client created")
 
-
 	//
 	// Upload APKs
 	fmt.Println()
@@ -361,7 +360,7 @@ func main() {
 	// Toke
 	packageNames := strings.Split(configs.PackageName, "|")
 
-	if (len(apkPaths) != len(packageNames)) {
+	if len(apkPaths) != len(packageNames) {
 		failf("Mismatching number of APKs(%d) and Package names (%d)", len(apkPaths), len(packageNames))
 	}
 
@@ -379,39 +378,40 @@ func main() {
 			failf("Failed to read apk (%s), error: %s", apkPath, err)
 		}
 
-			// ---
+		fmt.Println()
+		log.Infof("Preparing to upload %s, with package name: %s ", apkPath, packageName)
 
-	//
-	// Create insert edit
-	fmt.Println()
-	log.Infof("Create new edit")
+		//
+		// Create insert edit
+		fmt.Println()
+		log.Infof("Create new edit")
 
-	editsService := androidpublisher.NewEditsService(service)
+		editsService := androidpublisher.NewEditsService(service)
 
-	editsInsertCall := editsService.Insert(packageName, nil)
+		editsInsertCall := editsService.Insert(packageName, nil)
 
-	appEdit, err := editsInsertCall.Do()
-	if err != nil {
-		failf("Failed to perform edit insert call, error: %s", err)
-	}
+		appEdit, err := editsInsertCall.Do()
+		if err != nil {
+			failf("Failed to perform edit insert call, error: %s", err)
+		}
 
-	log.Printf(" editID: %s", appEdit.Id)
-	// ---
+		log.Printf(" editID: %s", appEdit.Id)
+		// ---
 
-	//
-	// List track infos
-	fmt.Println()
-	log.Infof("List track infos")
+		//
+		// List track infos
+		fmt.Println()
+		log.Infof("List track infos")
 
-	tracksService := androidpublisher.NewEditsTracksService(service)
-	tracksListCall := tracksService.List(packageName, appEdit.Id)
-	listResponse, err := tracksListCall.Do()
-	if err != nil {
-		failf("Failed to list tracks, error: %s", err)
-	}
-	for _, track := range listResponse.Tracks {
-		log.Printf(" %s versionCodes: %v", track.Track, track.VersionCodes)
-	}
+		tracksService := androidpublisher.NewEditsTracksService(service)
+		tracksListCall := tracksService.List(packageName, appEdit.Id)
+		listResponse, err := tracksListCall.Do()
+		if err != nil {
+			failf("Failed to list tracks, error: %s", err)
+		}
+		for _, track := range listResponse.Tracks {
+			log.Printf(" %s versionCodes: %v", track.Track, track.VersionCodes)
+		}
 
 		if strings.HasSuffix(apkPath, "aab") {
 			editsBundlesService := androidpublisher.NewEditsBundlesService(service)
@@ -490,191 +490,191 @@ func main() {
 			}
 		}
 
-	// Update track
-	fmt.Println()
-	log.Infof("Update track")
-
-	editsTracksService := androidpublisher.NewEditsTracksService(service)
-
-	newTrack := androidpublisher.Track{
-		Track:        configs.Track,
-		VersionCodes: versionCodes,
-	}
-
-	if configs.Track == rolloutTrackName {
-		userFraction, err := strconv.ParseFloat(configs.UserFraction, 64)
-		if err != nil {
-			failf("Failed to parse user fraction, error: %s", err)
-		}
-		newTrack.UserFraction = userFraction
-	}
-
-	editsTracksUpdateCall := editsTracksService.Update(packageName, appEdit.Id, configs.Track, &newTrack)
-	track, err := editsTracksUpdateCall.Do()
-	if err != nil {
-		failf("Failed to update track, error: %s", err)
-	}
-
-	log.Printf(" updated track: %s", track.Track)
-	log.Printf(" assigned apk versions: %v", track.VersionCodes)
-	// ---
-
-	//
-	// Deactivate blocking apks
-	untrackApks := (configs.UntrackBlockingVersions == "true")
-
-	if untrackApks && configs.Track == alphaTrackName {
+		// Update track
 		fmt.Println()
-		log.Warnf("UntrackBlockingVersions is set, but selected track is: alpha, nothing to deactivate")
-		untrackApks = false
-	}
+		log.Infof("Update track")
 
-	anyTrackUpdated := false
+		editsTracksService := androidpublisher.NewEditsTracksService(service)
 
-	if untrackApks {
-		fmt.Println()
-		log.Infof("Deactivating blocking apk versions")
-
-		// List all tracks
-		tracksService := androidpublisher.NewEditsTracksService(service)
-
-		// Collect tracks to update
-		tracksListCall := tracksService.List(packageName, appEdit.Id)
-		listResponse, err := tracksListCall.Do()
-		if err != nil {
-			failf("Failed to list tracks, error: %s", err)
+		newTrack := androidpublisher.Track{
+			Track:        configs.Track,
+			VersionCodes: versionCodes,
 		}
 
-		tracks := listResponse.Tracks
-
-		possibleTrackNamesToUpdate := []string{}
-		switch configs.Track {
-		case betaTrackName:
-			possibleTrackNamesToUpdate = []string{alphaTrackName}
-		case rolloutTrackName, productionTrackName:
-			possibleTrackNamesToUpdate = []string{alphaTrackName, betaTrackName}
-		}
-
-		trackNamesToUpdate := []string{}
-		for _, track := range tracks {
-			for _, trackNameToUpdate := range possibleTrackNamesToUpdate {
-				if trackNameToUpdate == track.Track {
-					trackNamesToUpdate = append(trackNamesToUpdate, trackNameToUpdate)
-				}
-			}
-		}
-
-		log.Printf(" possible tracks to update: %v", trackNamesToUpdate)
-
-		for _, trackName := range trackNamesToUpdate {
-			tracksGetCall := tracksService.Get(packageName, appEdit.Id, trackName)
-			track, err := tracksGetCall.Do()
+		if configs.Track == rolloutTrackName {
+			userFraction, err := strconv.ParseFloat(configs.UserFraction, 64)
 			if err != nil {
-				failf("Failed to get track (%s), error: %s", trackName, err)
+				failf("Failed to parse user fraction, error: %s", err)
+			}
+			newTrack.UserFraction = userFraction
+		}
+
+		editsTracksUpdateCall := editsTracksService.Update(packageName, appEdit.Id, configs.Track, &newTrack)
+		track, err := editsTracksUpdateCall.Do()
+		if err != nil {
+			failf("Failed to update track, error: %s", err)
+		}
+
+		log.Printf(" updated track: %s", track.Track)
+		log.Printf(" assigned apk versions: %v", track.VersionCodes)
+		// ---
+
+		//
+		// Deactivate blocking apks
+		untrackApks := (configs.UntrackBlockingVersions == "true")
+
+		if untrackApks && configs.Track == alphaTrackName {
+			fmt.Println()
+			log.Warnf("UntrackBlockingVersions is set, but selected track is: alpha, nothing to deactivate")
+			untrackApks = false
+		}
+
+		anyTrackUpdated := false
+
+		if untrackApks {
+			fmt.Println()
+			log.Infof("Deactivating blocking apk versions")
+
+			// List all tracks
+			tracksService := androidpublisher.NewEditsTracksService(service)
+
+			// Collect tracks to update
+			tracksListCall := tracksService.List(packageName, appEdit.Id)
+			listResponse, err := tracksListCall.Do()
+			if err != nil {
+				failf("Failed to list tracks, error: %s", err)
 			}
 
-			log.Printf(" checking apk versions on track: %s", track.Track)
+			tracks := listResponse.Tracks
 
-			log.Infof(" versionCodes: %v", track.VersionCodes)
+			possibleTrackNamesToUpdate := []string{}
+			switch configs.Track {
+			case betaTrackName:
+				possibleTrackNamesToUpdate = []string{alphaTrackName}
+			case rolloutTrackName, productionTrackName:
+				possibleTrackNamesToUpdate = []string{alphaTrackName, betaTrackName}
+			}
 
-			var cleanTrack bool
-
-			if len(track.VersionCodes) != len(versionCodes) {
-				log.Warnf("Mismatching apk count, removing (%v) versions from track: %s", track.VersionCodes, track.Track)
-				cleanTrack = true
-			} else {
-				sort.Slice(track.VersionCodes, func(a, b int) bool { return track.VersionCodes[a] < track.VersionCodes[b] })
-				sort.Slice(versionCodes, func(a, b int) bool { return versionCodes[a] < versionCodes[b] })
-
-				for i := 0; i < len(versionCodes); i++ {
-					if track.VersionCodes[i] < versionCodes[i] {
-						log.Warnf("Shadowing APK found, removing (%v) versions from track: %s", track.VersionCodes, track.Track)
-						cleanTrack = true
-						break
+			trackNamesToUpdate := []string{}
+			for _, track := range tracks {
+				for _, trackNameToUpdate := range possibleTrackNamesToUpdate {
+					if trackNameToUpdate == track.Track {
+						trackNamesToUpdate = append(trackNamesToUpdate, trackNameToUpdate)
 					}
 				}
 			}
 
-			if cleanTrack {
-				anyTrackUpdated = true
+			log.Printf(" possible tracks to update: %v", trackNamesToUpdate)
 
-				track.VersionCodes = []int64{}
-				track.NullFields = []string{"VersionCodes"}
-				track.ForceSendFields = []string{"VersionCodes"}
-
-				tracksUpdateCall := tracksService.Patch(packageName, appEdit.Id, trackName, track)
-				if _, err := tracksUpdateCall.Do(); err != nil && err != io.EOF {
-					failf("Failed to update track (%s), error: %s", trackName, err)
-				}
-			}
-		}
-
-		if anyTrackUpdated {
-			log.Donef("Desired versions deactivated")
-		} else {
-			log.Donef("No blocking apk version found")
-		}
-	}
-	// ---
-
-	//
-	// Update listing
-	if configs.WhatsnewsDir != "" {
-		fmt.Println()
-		log.Infof("Update listing")
-
-		recentChangesMap, err := readLocalisedRecentChanges(configs.WhatsnewsDir)
-		if err != nil {
-			failf("Failed to read whatsnews, error: %s", err)
-		}
-
-		editsApklistingsService := androidpublisher.NewEditsApklistingsService(service)
-
-		for _, versionCode := range versionCodes {
-			log.Printf(" updating recent changes for version: %d", versionCode)
-
-			for language, recentChanges := range recentChangesMap {
-				newApkListing := androidpublisher.ApkListing{
-					Language:      language,
-					RecentChanges: recentChanges,
-				}
-
-				editsApkListingsCall := editsApklistingsService.Update(packageName, appEdit.Id, versionCode, language, &newApkListing)
-				apkListing, err := editsApkListingsCall.Do()
+			for _, trackName := range trackNamesToUpdate {
+				tracksGetCall := tracksService.Get(packageName, appEdit.Id, trackName)
+				track, err := tracksGetCall.Do()
 				if err != nil {
-					failf("Failed to update listing, error: %s", err)
+					failf("Failed to get track (%s), error: %s", trackName, err)
 				}
 
-				log.Printf(" - language: %s", apkListing.Language)
+				log.Printf(" checking apk versions on track: %s", track.Track)
+
+				log.Infof(" versionCodes: %v", track.VersionCodes)
+
+				var cleanTrack bool
+
+				if len(track.VersionCodes) != len(versionCodes) {
+					log.Warnf("Mismatching apk count, removing (%v) versions from track: %s", track.VersionCodes, track.Track)
+					cleanTrack = true
+				} else {
+					sort.Slice(track.VersionCodes, func(a, b int) bool { return track.VersionCodes[a] < track.VersionCodes[b] })
+					sort.Slice(versionCodes, func(a, b int) bool { return versionCodes[a] < versionCodes[b] })
+
+					for i := 0; i < len(versionCodes); i++ {
+						if track.VersionCodes[i] < versionCodes[i] {
+							log.Warnf("Shadowing APK found, removing (%v) versions from track: %s", track.VersionCodes, track.Track)
+							cleanTrack = true
+							break
+						}
+					}
+				}
+
+				if cleanTrack {
+					anyTrackUpdated = true
+
+					track.VersionCodes = []int64{}
+					track.NullFields = []string{"VersionCodes"}
+					track.ForceSendFields = []string{"VersionCodes"}
+
+					tracksUpdateCall := tracksService.Patch(packageName, appEdit.Id, trackName, track)
+					if _, err := tracksUpdateCall.Do(); err != nil && err != io.EOF {
+						failf("Failed to update track (%s), error: %s", trackName, err)
+					}
+				}
+			}
+
+			if anyTrackUpdated {
+				log.Donef("Desired versions deactivated")
+			} else {
+				log.Donef("No blocking apk version found")
 			}
 		}
+		// ---
+
+		//
+		// Update listing
+		if configs.WhatsnewsDir != "" {
+			fmt.Println()
+			log.Infof("Update listing")
+
+			recentChangesMap, err := readLocalisedRecentChanges(configs.WhatsnewsDir)
+			if err != nil {
+				failf("Failed to read whatsnews, error: %s", err)
+			}
+
+			editsApklistingsService := androidpublisher.NewEditsApklistingsService(service)
+
+			for _, versionCode := range versionCodes {
+				log.Printf(" updating recent changes for version: %d", versionCode)
+
+				for language, recentChanges := range recentChangesMap {
+					newApkListing := androidpublisher.ApkListing{
+						Language:      language,
+						RecentChanges: recentChanges,
+					}
+
+					editsApkListingsCall := editsApklistingsService.Update(packageName, appEdit.Id, versionCode, language, &newApkListing)
+					apkListing, err := editsApkListingsCall.Do()
+					if err != nil {
+						failf("Failed to update listing, error: %s", err)
+					}
+
+					log.Printf(" - language: %s", apkListing.Language)
+				}
+			}
+		}
+		// ---
+
+		//
+		// Validate edit
+		fmt.Println()
+		log.Infof("Validating edit")
+
+		editsValidateCall := editsService.Validate(packageName, appEdit.Id)
+		if _, err := editsValidateCall.Do(); err != nil {
+			failf("Failed to validate edit, error: %s", err)
+		}
+
+		log.Donef("Edit is valid")
+		// ---
+
+		//
+		// Commit edit
+		fmt.Println()
+		log.Infof("Committing edit")
+
+		editsCommitCall := editsService.Commit(packageName, appEdit.Id)
+		if _, err := editsCommitCall.Do(); err != nil {
+			failf("Failed to commit edit, error: %s", err)
+		}
+
+		log.Donef("Edit committed")
+		// ---
 	}
-	// ---
-
-	//
-	// Validate edit
-	fmt.Println()
-	log.Infof("Validating edit")
-
-	editsValidateCall := editsService.Validate(packageName, appEdit.Id)
-	if _, err := editsValidateCall.Do(); err != nil {
-		failf("Failed to validate edit, error: %s", err)
-	}
-
-	log.Donef("Edit is valid")
-	// ---
-
-	//
-	// Commit edit
-	fmt.Println()
-	log.Infof("Committing edit")
-
-	editsCommitCall := editsService.Commit(packageName, appEdit.Id)
-	if _, err := editsCommitCall.Do(); err != nil {
-		failf("Failed to commit edit, error: %s", err)
-	}
-
-	log.Donef("Edit committed")
-	// ---
-}
 }
